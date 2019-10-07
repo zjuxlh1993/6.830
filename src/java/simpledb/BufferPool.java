@@ -1,7 +1,6 @@
 package simpledb;
 
 import java.io.*;
-import java.util.HashMap;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -76,8 +75,8 @@ public class BufferPool {
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
-    	if (pageIdHashMap.contains(pid)) return pageIdHashMap.get(pid);
-    	Page page = Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid);
+    	if (pageIdHashMap.containsKey(pid)) return pageIdHashMap.get(pid);
+    	
     	if (pages.size() >= pagenums) {
     		Page oldPage = pages.poll();
     		try {
@@ -87,6 +86,7 @@ public class BufferPool {
 			}
     		pageIdHashMap.remove(oldPage.getId());
     	}
+    	Page page = Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid);
     	pages.add(page);
     	pageIdHashMap.put(pid, page);
         return page;

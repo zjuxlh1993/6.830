@@ -11,6 +11,9 @@ public class SeqScan implements OpIterator {
 
     private static final long serialVersionUID = 1L;
     private int tableid;
+    private TransactionId transactionId;
+    private DbFile dbFile;
+    private DbFileIterator iterator;
 
     /**
      * Creates a sequential scan over the specified table as a part of the
@@ -31,6 +34,9 @@ public class SeqScan implements OpIterator {
     public SeqScan(TransactionId tid, int tableid, String tableAlias) {
         // some code goes here
     	this.tableid = tableid;
+    	transactionId = tid; 
+    	dbFile = Database.getCatalog().getDatabaseFile(tableid);
+    	iterator = dbFile.iterator(transactionId);
     }
 
     /**
@@ -64,7 +70,6 @@ public class SeqScan implements OpIterator {
      *            tableAlias.null, or null.null).
      */
     public void reset(int tableid, String tableAlias) {
-        // some code goes here
     }
 
     public SeqScan(TransactionId tid, int tableId) {
@@ -73,6 +78,7 @@ public class SeqScan implements OpIterator {
 
     public void open() throws DbException, TransactionAbortedException {
         // some code goes here
+    	rewind();
     }
 
     /**
@@ -87,26 +93,28 @@ public class SeqScan implements OpIterator {
      */
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return null;
+        return dbFile.getTupleDesc();
     }
 
     public boolean hasNext() throws TransactionAbortedException, DbException {
         // some code goes here
-        return false;
+        return iterator.hasNext();
     }
 
     public Tuple next() throws NoSuchElementException,
             TransactionAbortedException, DbException {
         // some code goes here
-        return null;
+        return iterator.next();
     }
 
     public void close() {
         // some code goes here
+    	iterator.close();
     }
 
     public void rewind() throws DbException, NoSuchElementException,
             TransactionAbortedException {
         // some code goes here
+    	iterator.rewind();
     }
 }

@@ -1,7 +1,10 @@
 package simpledb;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.Vector;
 
 /**
  * Tuple maintains information about the contents of a tuple. Tuples have a
@@ -13,7 +16,7 @@ public class Tuple implements Serializable {
     private static final long serialVersionUID = 1L;
     private TupleDesc tupleDesc = null;
     private RecordId recordId = null;
-    private Object[] vFields = null;
+    private Vector<Field> vFields = null;
 
     /**
      * Create a new tuple with the specified schema (type).
@@ -25,7 +28,10 @@ public class Tuple implements Serializable {
     public Tuple(TupleDesc td) {
         // some code goes here
     	tupleDesc = td;
-    	vFields = new Object[td.numFields()];
+    	vFields = new Vector<Field>(td.numFields());
+    	for (int i = 0; i!=td.numFields(); i++) {
+    		vFields.add(null);
+    	}
     }
 
     /**
@@ -66,7 +72,7 @@ public class Tuple implements Serializable {
      */
     public void setField(int i, Field f) {
         // some code goes here
-    	vFields[i] = f; 
+    	vFields.set(i, f); 
     }
 
     /**
@@ -77,7 +83,7 @@ public class Tuple implements Serializable {
      */
     public Field getField(int i) {
         // some code goes here
-        return (Field)vFields[i];
+        return vFields.get(i);
     }
 
     /**
@@ -90,7 +96,12 @@ public class Tuple implements Serializable {
      */
     public String toString() {
         // some code goes here
-        throw new UnsupportedOperationException("Implement this");
+    	String retString = "";
+        for (Iterator<Field> fIterator = fields(); fIterator.hasNext();) {
+        	retString += fIterator.next().toString();
+        	if (!fIterator.hasNext()) retString += '\t';
+        }
+        return retString;
     }
 
     /**
@@ -100,7 +111,7 @@ public class Tuple implements Serializable {
     public Iterator<Field> fields()
     {
         // some code goes here
-        return null;
+        return vFields.iterator();
     }
 
     /**
@@ -109,5 +120,10 @@ public class Tuple implements Serializable {
     public void resetTupleDesc(TupleDesc td)
     {
         // some code goes here
+    	tupleDesc = td;
+    	vFields = new Vector<Field>(td.numFields());
+    	for (int i = 0; i!=td.numFields(); i++) {
+    		vFields.add(null);
+    	}
     }
 }
