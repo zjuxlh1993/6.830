@@ -1,6 +1,9 @@
 package simpledb;
 
 import java.util.*;
+
+import static org.junit.Assert.assertEquals;
+
 import java.io.*;
 
 /**
@@ -48,7 +51,6 @@ public class HeapPage implements Page {
         header = new byte[getHeaderSize()];
         for (int i=0; i<header.length; i++)
             header[i] = dis.readByte();
-        
         tuples = new Tuple[numSlots];
         try{
             // allocate and read the actual records of this page
@@ -67,8 +69,7 @@ public class HeapPage implements Page {
     */
     private int getNumTuples() {        
         // some code goes here
-        return 0;
-
+        return BufferPool.getPageSize() * 8 / (td.getSize() * 8 + 1);
     }
 
     /**
@@ -78,7 +79,7 @@ public class HeapPage implements Page {
     private int getHeaderSize() {        
         
         // some code goes here
-        return 0;
+        return (int) Math.ceil((double)getNumTuples() / 8);
                  
     }
     
@@ -112,7 +113,7 @@ public class HeapPage implements Page {
      */
     public HeapPageId getId() {
     // some code goes here
-    throw new UnsupportedOperationException("implement this");
+    	return pid;
     }
 
     /**
@@ -282,7 +283,12 @@ public class HeapPage implements Page {
      */
     public int getNumEmptySlots() {
         // some code goes here
-        return 0;
+    	int ret = 0, len = getNumTuples();
+    	for (int i = 0; i != len; i++) {
+			if (!isSlotUsed(i))
+				++ret;
+		}
+        return ret;
     }
 
     /**
@@ -290,7 +296,7 @@ public class HeapPage implements Page {
      */
     public boolean isSlotUsed(int i) {
         // some code goes here
-        return false;
+        return ((header[i>>3])&(1<<(i&0x7))) > 0;
     }
 
     /**
@@ -307,7 +313,26 @@ public class HeapPage implements Page {
      */
     public Iterator<Tuple> iterator() {
         // some code goes here
-        return null;
+        return new Iterator<Tuple>() {
+			private int i = 0;
+			private int len = getNumTuples();
+        	
+			@Override
+			public Tuple next() {
+				if (!hasNext()) return null;
+				return tuples[i++];
+			}
+			
+			@Override
+			public boolean hasNext() {
+				while (i<len) {
+					if (isSlotUsed(i))
+						return true;
+					++i;
+				}
+				return false;
+			}
+		};
     }
 
 }

@@ -18,6 +18,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Catalog {
 
+	ConcurrentHashMap<Integer, String> iDToNameMap = new ConcurrentHashMap<Integer, String>();
+	ConcurrentHashMap<String, DbFile> tables =  new ConcurrentHashMap<String, DbFile>();
+	
     /**
      * Constructor.
      * Creates a new, empty catalog.
@@ -37,6 +40,8 @@ public class Catalog {
      */
     public void addTable(DbFile file, String name, String pkeyField) {
         // some code goes here
+    	iDToNameMap.put(file.getId(), name);
+    	tables.put(name, file);
     }
 
     public void addTable(DbFile file, String name) {
@@ -60,7 +65,9 @@ public class Catalog {
      */
     public int getTableId(String name) throws NoSuchElementException {
         // some code goes here
-        return 0;
+    	if (!tables.containsKey(name)) 
+    		throw new NoSuchElementException("the table doesn't exist");
+        return tables.get(name).getId();
     }
 
     /**
@@ -70,8 +77,9 @@ public class Catalog {
      * @throws NoSuchElementException if the table doesn't exist
      */
     public TupleDesc getTupleDesc(int tableid) throws NoSuchElementException {
-        // some code goes here
-        return null;
+    	if (!iDToNameMap.containsKey(tableid)) 
+    		throw new NoSuchElementException("the table doesn't exist");
+        return tables.get(iDToNameMap.get(tableid)).getTupleDesc();
     }
 
     /**
@@ -82,7 +90,7 @@ public class Catalog {
      */
     public DbFile getDatabaseFile(int tableid) throws NoSuchElementException {
         // some code goes here
-        return null;
+        return tables.get(iDToNameMap.get(tableid));
     }
 
     public String getPrimaryKey(int tableid) {
@@ -97,7 +105,7 @@ public class Catalog {
 
     public String getTableName(int id) {
         // some code goes here
-        return null;
+        return iDToNameMap.get(id);
     }
     
     /** Delete all tables from the catalog */

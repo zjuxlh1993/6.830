@@ -1,7 +1,10 @@
 package simpledb;
 
 import java.io.*;
-
+import java.util.HashMap;
+import java.util.NoSuchElementException;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -26,6 +29,10 @@ public class BufferPool {
     constructor instead. */
     public static final int DEFAULT_PAGES = 50;
 
+    private int pagenums = DEFAULT_PAGES; 
+    private Queue<Page> pages;
+    private ConcurrentHashMap<PageId, Page> pageIdHashMap = new ConcurrentHashMap();
+    
     /**
      * Creates a BufferPool that caches up to numPages pages.
      *
@@ -33,6 +40,8 @@ public class BufferPool {
      */
     public BufferPool(int numPages) {
         // some code goes here
+    	pagenums = numPages;
+    	pages = new ArrayBlockingQueue<Page>(numPages);
     }
     
     public static int getPageSize() {
@@ -67,7 +76,20 @@ public class BufferPool {
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
-        return null;
+    	if (pageIdHashMap.contains(pid)) return pageIdHashMap.get(pid);
+    	Page page = Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid);
+    	if (pages.size() >= pagenums) {
+    		Page oldPage = pages.poll();
+    		try {
+				Database.getCatalog().getDatabaseFile(oldPage.getId().getTableId()).writePage(oldPage);
+			} catch (NoSuchElementException | IOException e) {
+				e.printStackTrace();
+			}
+    		pageIdHashMap.remove(oldPage.getId());
+    	}
+    	pages.add(page);
+    	pageIdHashMap.put(pid, page);
+        return page;
     }
 
     /**
