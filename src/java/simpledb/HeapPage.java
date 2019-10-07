@@ -1,9 +1,6 @@
 package simpledb;
 
 import java.util.*;
-
-import static org.junit.Assert.assertEquals;
-
 import java.io.*;
 
 /**

@@ -31,7 +31,7 @@ public class BufferPool {
 
     private int pagenums = DEFAULT_PAGES; 
     private Queue<Page> pages;
-    private ConcurrentHashMap<PageId, Page> pageIdHashMap = new ConcurrentHashMap();
+    private ConcurrentHashMap<PageId, Page> pageIdHashMap = new ConcurrentHashMap<PageId, Page>();
     
     /**
      * Creates a BufferPool that caches up to numPages pages.
