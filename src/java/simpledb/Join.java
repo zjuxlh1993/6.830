@@ -71,23 +71,26 @@ public class Join extends Operator {
     public void open() throws DbException, NoSuchElementException,
             TransactionAbortedException {
         // some code goes here
-        child1.open();
+    	child1.open();
         child2.open();
-        while (child1.hasNext() && child2.hasNext()) {
+        while (child1.hasNext()) {
         	Tuple tmpTuple1 = child1.next();
-        	Tuple tmpTuple2 = child2.next();
-            if (joinPredicate.filter(tmpTuple1, tmpTuple2)) {
-            	Tuple merTuple = new Tuple(mergeDesc);
-            	int len1 = child1.getTupleDesc().numFields();
-            	int len2 = child2.getTupleDesc().numFields();
-            	for (int i=0; i!=len1; i++) {
-            		merTuple.setField(i, tmpTuple1.getField(i));
+        	while (child2.hasNext()) {
+        		Tuple tmpTuple2 = child2.next();
+        		if (joinPredicate.filter(tmpTuple1, tmpTuple2)) {
+            		Tuple merTuple = new Tuple(mergeDesc);
+            		int len1 = child1.getTupleDesc().numFields();
+            		int len2 = child2.getTupleDesc().numFields();
+            		for (int i=0; i!=len1; i++) {
+            			merTuple.setField(i, tmpTuple1.getField(i));
+            		}
+            		for (int i=len1; i!=len1+len2; i++) {
+            			merTuple.setField(i, tmpTuple2.getField(i-len1));
+            		}
+            		childTups.add(merTuple);
             	}
-            	for (int i=len1; i!=len1+len2; i++) {
-            		merTuple.setField(i, tmpTuple2.getField(i-len1));
-            	}
-            	childTups.add(merTuple);
-            }
+        	}
+        	child2.rewind();
         }
         it = childTups.iterator();
         super.open();
