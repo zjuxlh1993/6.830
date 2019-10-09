@@ -10,7 +10,12 @@ import java.util.*;
 public class Aggregate extends Operator {
 
     private static final long serialVersionUID = 1L;
-
+    private Aggregator aggregator;
+    private int afield, gfield;
+    private OpIterator child;
+    private Aggregator.Op op;
+    
+    
     /**
      * Constructor.
      * 
@@ -31,6 +36,20 @@ public class Aggregate extends Operator {
      */
     public Aggregate(OpIterator child, int afield, int gfield, Aggregator.Op aop) {
 	// some code goes here
+    	op = aop;
+    	this.child = child;
+    	this.afield = afield;
+    	this.gfield = gfield;
+    	switch (child.getTupleDesc().getFieldType(afield)) {
+		case STRING_TYPE:
+			aggregator = new StringAggregator(gfield, child.getTupleDesc().getFieldType(gfield), afield, aop);
+			break;
+		case INT_TYPE:
+			aggregator = new IntegerAggregator(gfield, child.getTupleDesc().getFieldType(gfield), afield, aop);
+			break;
+		default:
+			throw new UnsupportedOperationException();
+    	}
     }
 
     /**
@@ -40,7 +59,7 @@ public class Aggregate extends Operator {
      * */
     public int groupField() {
 	// some code goes here
-	return -1;
+	return gfield;
     }
 
     /**
@@ -50,7 +69,7 @@ public class Aggregate extends Operator {
      * */
     public String groupFieldName() {
 	// some code goes here
-	return null;
+	return gfield == Aggregator.NO_GROUPING?null:child.getTupleDesc().getFieldName(gfield);
     }
 
     /**
@@ -58,7 +77,7 @@ public class Aggregate extends Operator {
      * */
     public int aggregateField() {
 	// some code goes here
-	return -1;
+	return afield;
     }
 
     /**
@@ -67,7 +86,7 @@ public class Aggregate extends Operator {
      * */
     public String aggregateFieldName() {
 	// some code goes here
-	return null;
+	return child.getTupleDesc().getFieldName(afield);
     }
 
     /**
@@ -75,7 +94,7 @@ public class Aggregate extends Operator {
      * */
     public Aggregator.Op aggregateOp() {
 	// some code goes here
-	return null;
+	return op;
     }
 
     public static String nameOfAggregatorOp(Aggregator.Op aop) {
@@ -85,6 +104,7 @@ public class Aggregate extends Operator {
     public void open() throws NoSuchElementException, DbException,
 	    TransactionAbortedException {
 	// some code goes here
+    	child.open();
     }
 
     /**
@@ -101,6 +121,7 @@ public class Aggregate extends Operator {
 
     public void rewind() throws DbException, TransactionAbortedException {
 	// some code goes here
+    	child.rewind();
     }
 
     /**
