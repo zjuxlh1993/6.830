@@ -11,7 +11,7 @@ import java.util.Vector;
 public class IntegerAggregator implements Aggregator {
 
     private static final long serialVersionUID = 1L;
-    private static final Field NOGROUP_FIELD = new IntField(0);
+    private static final Field NOGROUP_FIELD = null;
 
     int gbField, aField;
     Type gbfieldType;
@@ -25,10 +25,10 @@ public class IntegerAggregator implements Aggregator {
     	Tuple tuple;
     	int v;
     	int s;
-    	public entry(Tuple t) {
+    	public entry(Tuple t, int s) {
 			tuple = t;
 			v = 1;
-			s = getAValue(t);
+			this.s = s;
 		}
     }
     
@@ -72,9 +72,16 @@ public class IntegerAggregator implements Aggregator {
     
     public entry merge(Tuple tup, entry e) {
     	if (e == null) {
-    		return getTuple(tup);
+    		entry entry = getTuple(tup);
+    		if (op == Op.COUNT) {
+    			entry.tuple.setField(isGrouping?1:0, new IntField(1));
+    		}
+    		return entry;
     	}
     	switch (op) {
+		case COUNT:
+			e.tuple.setField(isGrouping?1:0, new IntField(getEAValue(e)+1));
+			break;
 		case MAX:
 			e.tuple.setField(isGrouping?1:0, new IntField(Math.max(getEAValue(e), getAValue(tup))));
 			break;
@@ -104,11 +111,11 @@ public class IntegerAggregator implements Aggregator {
      */
     public void mergeTupleIntoGroup(Tuple tup) {
         // some code goes here
-    	Field field = tup.getField(gbField);
     	if (isGrouping) {
+    		Field field = tup.getField(gbField);
     		aggregateRes.put(field, merge(tup, aggregateRes.get(field)));
     	} else {
-    		aggregateRes.put(NOGROUP_FIELD, merge(tup, aggregateRes.get(field)));
+    		aggregateRes.put(NOGROUP_FIELD, merge(tup, aggregateRes.get(NOGROUP_FIELD)));
     	}
     }
 
@@ -187,6 +194,6 @@ public class IntegerAggregator implements Aggregator {
     		reTuple.setField(index++, tup.getField(gbField));
     	}
     	reTuple.setField(index, tup.getField(aField));
-    	return new entry(reTuple);
+    	return new entry(reTuple, getAValue(tup));
     }
 }

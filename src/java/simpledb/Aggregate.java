@@ -12,7 +12,7 @@ public class Aggregate extends Operator {
     private static final long serialVersionUID = 1L;
     private Aggregator aggregator;
     private int afield, gfield;
-    private OpIterator child;
+    private OpIterator child, it;
     private Aggregator.Op op;
     
     
@@ -42,10 +42,12 @@ public class Aggregate extends Operator {
     	this.gfield = gfield;
     	switch (child.getTupleDesc().getFieldType(afield)) {
 		case STRING_TYPE:
-			aggregator = new StringAggregator(gfield, child.getTupleDesc().getFieldType(gfield), afield, aop);
+			aggregator = new StringAggregator(gfield, 
+					gfield==Aggregator.NO_GROUPING?null:child.getTupleDesc().getFieldType(gfield), afield, aop);
 			break;
 		case INT_TYPE:
-			aggregator = new IntegerAggregator(gfield, child.getTupleDesc().getFieldType(gfield), afield, aop);
+			aggregator = new IntegerAggregator(gfield, 
+					gfield==Aggregator.NO_GROUPING?null:child.getTupleDesc().getFieldType(gfield), afield, aop);
 			break;
 		default:
 			throw new UnsupportedOperationException();
@@ -105,6 +107,12 @@ public class Aggregate extends Operator {
 	    TransactionAbortedException {
 	// some code goes here
     	child.open();
+    	super.open();
+    	while (child.hasNext()) {
+    		aggregator.mergeTupleIntoGroup(child.next());
+    	}
+    	it = aggregator.iterator();
+    	it.open();
     }
 
     /**
@@ -116,12 +124,15 @@ public class Aggregate extends Operator {
      */
     protected Tuple fetchNext() throws TransactionAbortedException, DbException {
 	// some code goes here
-	return null;
+        if (it != null && it.hasNext()) {
+            return it.next();
+        } else
+            return null;
     }
 
     public void rewind() throws DbException, TransactionAbortedException {
 	// some code goes here
-    	child.rewind();
+    	it = aggregator.iterator();
     }
 
     /**
@@ -137,22 +148,26 @@ public class Aggregate extends Operator {
      */
     public TupleDesc getTupleDesc() {
 	// some code goes here
-	return null;
+	return it.getTupleDesc();
     }
 
     public void close() {
 	// some code goes here
+    	child.close();
+    	super.close();
+    	it.close();
     }
 
     @Override
     public OpIterator[] getChildren() {
 	// some code goes here
-	return null;
+	return new OpIterator[] {child};
     }
 
     @Override
     public void setChildren(OpIterator[] children) {
 	// some code goes here
+    	child = children[0];
     }
     
 }
