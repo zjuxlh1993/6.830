@@ -132,7 +132,7 @@ public class Aggregate extends Operator {
 
     public void rewind() throws DbException, TransactionAbortedException {
 	// some code goes here
-    	it = aggregator.iterator();
+    	it.rewind();
     }
 
     /**
@@ -148,7 +148,7 @@ public class Aggregate extends Operator {
      */
     public TupleDesc getTupleDesc() {
 	// some code goes here
-	return it.getTupleDesc();
+	return child.getTupleDesc();
     }
 
     public void close() {
