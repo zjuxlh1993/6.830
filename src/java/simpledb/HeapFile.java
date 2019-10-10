@@ -72,8 +72,12 @@ public class HeapFile implements DbFile {
         // some code goes here
     	RandomAccessFile randomAccessFile;
     	try {
-			randomAccessFile = new RandomAccessFile(file, "rw");
+			randomAccessFile = new RandomAccessFile(file, "r");
 			int pageSize = BufferPool.getPageSize();
+			if (pageSize * pid.getPageNumber() >= randomAccessFile.length()) {
+				randomAccessFile.close();
+				return new HeapPage((HeapPageId)pid, new byte[pageSize]);
+			}
 			byte[] dataBytes = new byte[pageSize];
 			randomAccessFile.seek(pageSize * pid.getPageNumber());
 			randomAccessFile.readFully(dataBytes);
@@ -87,7 +91,18 @@ public class HeapFile implements DbFile {
     // see DbFile.java for javadocs
     public void writePage(Page page) throws IOException {
         // some code goes here
-        // not necessary for lab1
+    	RandomAccessFile randomAccessFile;
+    	HeapPageId pid = (HeapPageId)page.getId();
+    	try {
+			randomAccessFile = new RandomAccessFile(file, "r");
+			int pageSize = BufferPool.getPageSize();
+			byte[] dataBytes = new byte[pageSize];
+			randomAccessFile.seek(pageSize * pid.getPageNumber());
+			randomAccessFile.write(dataBytes);
+			randomAccessFile.close();
+		} catch (IOException e) {
+			throw new IllegalArgumentException();
+		}
     }
 
     /**
@@ -110,6 +125,12 @@ public class HeapFile implements DbFile {
     public ArrayList<Page> deleteTuple(TransactionId tid, Tuple t) throws DbException,
             TransactionAbortedException {
         // some code goes here
+    	ArrayList<Page> ret;
+    	for (int i=0; i!=numPages(); i++) {
+    		Page page = Database.getBufferPool().getPage(tid, new HeapPageId(t., i), Permissions.READ_WRITE);
+    		if (page.isDirty() != null)
+    			ret.add(page);
+    	}
         return null;
         // not necessary for lab1
     }
