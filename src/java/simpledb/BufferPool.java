@@ -6,6 +6,7 @@ import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
+
 /**
  * BufferPool manages the reading and writing of pages into memory from
  * disk. Access methods call into it to retrieve pages, and it fetches
@@ -57,6 +58,30 @@ public class BufferPool {
     	BufferPool.pageSize = DEFAULT_PAGE_SIZE;
     }
 
+    
+    private Page insertPage(PageId pid, Page page) {
+    	if (page == null) 
+    		page = Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid);
+    	if (pages.size() >= pagenums) {
+    		Page oldPage = pages.poll();
+    		try {
+    			if (oldPage.isDirty() != null)
+    				Database.getCatalog().getDatabaseFile(oldPage.getId().getTableId()).writePage(oldPage);
+			} catch (NoSuchElementException | IOException e) {
+				e.printStackTrace();
+			}
+    		pageIdHashMap.remove(oldPage.getId());
+    	}
+    	pages.add(page);
+    	pageIdHashMap.put(pid, page);
+    	return page;
+    }
+    
+    
+    private Page getPage(PageId pid) {
+    	return pageIdHashMap.get(pid);
+    }
+    
     /**
      * Retrieve the specified page with the associated permissions.
      * Will acquire a lock and may block if that lock is held by another
@@ -75,22 +100,8 @@ public class BufferPool {
     public  Page getPage(TransactionId tid, PageId pid, Permissions perm)
         throws TransactionAbortedException, DbException {
         // some code goes here
-    	if (pageIdHashMap.containsKey(pid)) return pageIdHashMap.get(pid);
-    	
-    	if (pages.size() >= pagenums) {
-    		Page oldPage = pages.poll();
-    		try {
-    			if (oldPage.isDirty() != null)
-    				Database.getCatalog().getDatabaseFile(oldPage.getId().getTableId()).writePage(oldPage);
-			} catch (NoSuchElementException | IOException e) {
-				e.printStackTrace();
-			}
-    		pageIdHashMap.remove(oldPage.getId());
-    	}
-    	Page page = Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid);
-    	pages.add(page);
-    	pageIdHashMap.put(pid, page);
-        return page;
+    	Page page = getPage(pid);
+        return page==null?insertPage(pid, page):page;
     }
 
     /**
@@ -155,7 +166,10 @@ public class BufferPool {
     public void insertTuple(TransactionId tid, int tableId, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-    	Database.getCatalog().getDatabaseFile(tableId).insertTuple(tid, t);
+    	for (Page page : Database.getCatalog().getDatabaseFile(tableId).insertTuple(tid, t)) {
+        	Page old_page = getPage(page.getId());
+            if (old_page==null) insertPage(page.getId(), page);
+    	}
     }
 
     /**
@@ -174,7 +188,10 @@ public class BufferPool {
     public  void deleteTuple(TransactionId tid, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-    	Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId()).deleteTuple(tid, t);
+    	for (Page page : Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId()).deleteTuple(tid, t)) {
+        	Page old_page = getPage(page.getId());
+            if (old_page==null) insertPage(page.getId(), page);
+    	}
     }
 
     /**
