@@ -1,7 +1,5 @@
 package simpledb;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.Vector;

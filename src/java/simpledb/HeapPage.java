@@ -19,6 +19,7 @@ public class HeapPage implements Page {
     final Tuple tuples[];
     final int numSlots;
     boolean isDirty = false;
+    private TransactionId tId;
 
     byte[] oldData;
     private final Byte oldDataLock=new Byte((byte)0);
@@ -244,12 +245,11 @@ public class HeapPage implements Page {
     public void deleteTuple(Tuple t) throws DbException {
         // some code goes here
         // not necessary for lab1
-    	for (int i=0; i!=numSlots; i++) {
-    		if (isSlotUsed(i) && tuples[i].equals(t)) {
-    			markSlotUsed(i, false);
-    			isDirty = true;
-    		}
+    	int order = t.getRecordId().getTupleNumber();
+    	if (!t.getRecordId().getPageId().equals(this.getId()) || !isSlotUsed(order)) {
+    		throw new DbException("");
     	}
+    	markSlotUsed(order, false);
     }
 
     /**
@@ -262,6 +262,20 @@ public class HeapPage implements Page {
     public void insertTuple(Tuple t) throws DbException {
         // some code goes here
         // not necessary for lab1
+    	if (!td.equals(t.getTupleDesc())) {
+    		throw new DbException("tupledesc is mismatch.");
+    	}
+    	int len = getNumTuples();
+    	for (int i = 0; i != len; i++) {
+			if (!isSlotUsed(i)) {
+				markSlotUsed(i, true);
+				t.setRecordId(new RecordId(pid, i));
+				tuples[i] = t;
+				return;
+			}
+				
+		}
+    	throw new DbException("the page is full");
     }
 
     /**
@@ -272,6 +286,7 @@ public class HeapPage implements Page {
         // some code goes here
 	// not necessary for lab1
     	isDirty = dirty;
+    	tId = tid;
     }
 
     /**
@@ -280,7 +295,7 @@ public class HeapPage implements Page {
     public TransactionId isDirty() {
         // some code goes here
 	// Not necessary for lab1
-        return isDirty();      
+        return isDirty?tId:null;      
     }
 
     /**
@@ -311,7 +326,7 @@ public class HeapPage implements Page {
         // some code goes here
         // not necessary for lab1
     	header[i>>3] &= ~(1<<(i&0x7));
-    	header[i>>3] |= (value?1:0<<(i&0x7));
+    	header[i>>3] |= ((value?1:0)<<(i&0x7));
     }
 
     /**

@@ -80,7 +80,8 @@ public class BufferPool {
     	if (pages.size() >= pagenums) {
     		Page oldPage = pages.poll();
     		try {
-				Database.getCatalog().getDatabaseFile(oldPage.getId().getTableId()).writePage(oldPage);
+    			if (oldPage.isDirty() != null)
+    				Database.getCatalog().getDatabaseFile(oldPage.getId().getTableId()).writePage(oldPage);
 			} catch (NoSuchElementException | IOException e) {
 				e.printStackTrace();
 			}
@@ -173,7 +174,7 @@ public class BufferPool {
     public  void deleteTuple(TransactionId tid, Tuple t)
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-    	Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId()).insertTuple(tid, t);
+    	Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId()).deleteTuple(tid, t);
     }
 
     /**
